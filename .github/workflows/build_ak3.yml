@@ -174,18 +174,18 @@ jobs:
           cp "${GITHUB_WORKSPACE}"/zram/6.6/lz4_1.10.0.patch ./
 
           if ! patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch; then
-            echo "应用 lz4_1.10.0.patch 失败"
+            echo "::error ::Failed to apply lz4_1.10.0.patch"
             exit 1
           fi
 
           if ! patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch; then
-            echo "应用 50_add_susfs_in_gki-android15-6.6.patch 失败"
+            echo "::error ::Failed to apply 50_add_susfs_in_gki-android15-6.6.patch"
             exit 1
           fi
 
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           if ! patch -p1 -F 3 < syscall_hooks.patch; then
-            echo "应用 syscall_hooks.patch 失败"
+            echo "::error ::Failed to apply syscall_hooks.patch"
             exit 1
           fi
 
@@ -207,7 +207,7 @@ jobs:
               echo "加载 HMBird 补丁..."
               cp "${GITHUB_WORKSPACE}/hmbird_patch.c" "$PATCH_FILE"
             else
-              echo "此路径上未找到 hmbird_patch.c : ${GITHUB_WORKSPACE}"
+              echo "::error ::hmbird_patch.c not found in ${GITHUB_WORKSPACE}"
               exit 1
             fi
           fi
