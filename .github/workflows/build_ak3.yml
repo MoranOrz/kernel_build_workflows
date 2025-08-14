@@ -285,7 +285,7 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           CLANG_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin"
           RUSTC_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/rust/linux-x86/1.73.0b/bin/rustc"
-          PAHOLE_PATH="$GITHUB_WORKSPACE/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/pahole"
+          PAHOLE_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/pahole"
 
           if [ ! -d "$CLANG_PATH" ]; then
             echo "::error ::Clang toolchain not found at $CLANG_PATH"
