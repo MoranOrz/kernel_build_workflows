@@ -138,14 +138,17 @@ jobs:
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
           git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+
           cd kernel_platform
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
-          # Apply SUSFS patches
+
+          # Apply patches
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
+          
+          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           patch -p1 -F 3 < syscall_hooks.patch
           echo "✔️ SUSFS patches applied successfully"
       
