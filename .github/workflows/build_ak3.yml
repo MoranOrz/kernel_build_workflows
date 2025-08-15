@@ -143,9 +143,11 @@ jobs:
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
+          # Apply SUSFS patches
+          cd ./common
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
           patch -p1 -F 3 < syscall_hooks.patch
-          echo "✔️ SUSFS集成完成"
+          echo "✔️ SUSFS patches applied successfully"
       
       - name: ⚙️ 缓存 HMBird 补丁 (Cache HMBird Patch)
         uses: actions/cache@v4
