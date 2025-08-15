@@ -138,6 +138,7 @@ jobs:
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
           git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+          git clone https://github.com/MoranOrz/kernel_build_workflows.git lz4_patch
 
           cd kernel_platform
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
@@ -163,9 +164,9 @@ jobs:
               fi
           done
 
-          cp -r "${GITHUB_WORKSPACE}"/zram/lz4/* ./lib/lz4/
-          cp -r "${GITHUB_WORKSPACE}"/zram/include/linux/* ./include/linux/
-          cp "${GITHUB_WORKSPACE}"/zram/6.6/lz4_1.10.0.patch ./
+          cp -r ../../lz4_patch/zram/lz4/* ./lib/lz4/
+          cp -r ../../lz4_patch/zram/include/linux/* ./include/linux/
+          cp -r ../../lz4_patch/zram/6.6/lz4_1.10.0.patch ./
 
           if ! patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch; then
             echo "::error ::Failed to apply lz4_1.10.0.patch"
