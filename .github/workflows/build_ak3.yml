@@ -132,7 +132,7 @@ jobs:
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           export KSU_VERSION=$KSU_VERSION
           sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
-      
+
       - name: ⚙️ 集成 SUSFS (Integrate SUSFS)
         run: |
           cd kernel_workspace
@@ -146,12 +146,34 @@ jobs:
 
           # Apply patches
           cd ./common
+
+          # lz4 1.10.0
+          files=(
+            "lib/lz4/lz4_compress.c"
+            "lib/lz4/lz4_decompress.c"
+            "lib/lz4/lz4defs.h"
+            "lib/lz4/lz4hc_compress.c"
+          )
+          for file in "${files[@]}"; do
+              if [ -e "$file" ]; then
+                  rm "$file"
+              fi
+          done
+          cp -r "${GITHUB_WORKSPACE}"/zram/lz4/* ./lib/lz4/
+          cp -r "${GITHUB_WORKSPACE}"/zram/include/linux/* ./include/linux/
+          cp -r "${GITHUB_WORKSPACE}"/zram/6.6/lz4_1.10.0.patch ./
+          patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch
+          echo "✔️ lz4 1.10.0 patches applied successfully"
+
+          # 应用 SUSFS 补丁
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-          
+          echo "✔️ SUSFS patches applied successfully"
+
+          # 调用 manual 钩子
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           patch -p1 -F 3 < syscall_hooks.patch
-          echo "✔️ SUSFS patches applied successfully"
-      
+          echo "✔️ manual hook patches applied successfully"
+
       - name: ⚙️ 缓存 HMBird 补丁 (Cache HMBird Patch)
         uses: actions/cache@v4
         with:
@@ -160,6 +182,7 @@ jobs:
           restore-keys: |
             hmbird-patch-v1
 
+      # OGKI转换GKI，无需修改 dtbo 开机
       - name: 🚀 应用 HMBird 补丁 (Apply HMBird patch)
         run: |
           PATCH_FILE="${{ runner.temp }}/hmbird_patch.c"
@@ -172,10 +195,10 @@ jobs:
               exit 1
             fi
           fi
-          
+
           cd kernel_workspace/kernel_platform/common/drivers
           cp "$PATCH_FILE" hmbird_patch.c
-          
+
           if ! grep -q "hmbird_patch.o" Makefile; then
             echo "obj-y += hmbird_patch.o" >> Makefile
           fi
@@ -194,6 +217,12 @@ jobs:
           # 📌VFS
           echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
+          # 📌ZRAM
+          echo "CONFIG_CRYPTO_LZ4=y" >> "$CONFIG_FILE"
+          echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
+          echo "CONFIG_F2FS_FS_LZ4=y" >> "$CONFIG_FILE"
+          echo "CONFIG_F2FS_FS_LZ4HC=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KERNEL_LZ4=y" >> "$CONFIG_FILE"
           # 📌SUSFS
           echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$CONFIG_FILE"
@@ -245,7 +274,7 @@ jobs:
           cd kernel_workspace/kernel_platform/common
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  gki_defconfig
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC="$RUSTC_PATH" PAHOLE="$PAHOLE_PATH" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
-      
+
       - name: 📦 应用 KPM 补丁 (Apply KPM Patch)
         if: ${{ github.event.inputs.enable_feature_kpm == 'true' }}
         run: |
