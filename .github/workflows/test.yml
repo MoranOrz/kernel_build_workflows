@@ -1,86 +1,32 @@
 name: testworks
 on:
   workflow_dispatch:
+    inputs:
+      enable_feature_kpm:
+        description: 'KPM'
+        required: false
+        default: true
+        type: boolean
+      enable_feature_bbr:
+        description: 'BBR'
+        required: false
+        default: true
+        type: boolean
 jobs:
   builds:
     runs-on: ubuntu-latest
     env:
+      ENABLE_FEATURE_KPM: ${{ github.event.inputs.enable_feature_kpm }}
+      ENABLE_FEATURE_BBR: ${{ github.event.inputs.enable_feature_bbr }}
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      CCACHE_DIR: /home/runner/.ccache
+      CCACHE_DIR: "$HOME/.ccache_oneplus_pad_2_pro"
       CCACHE_MAXSIZE: 8G
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check if build artifact exists
+      - name: 测试
         run: |
-          # 调试信息
-          echo "当前工作目录: $(pwd)"
-          echo "GITHUB_WORKSPACE 内容:"
-          ls -la "${GITHUB_WORKSPACE}"
-          echo "zram 目录内容:"
-
-          # 1. 检查源目录是否存在
-          if [ -d "${GITHUB_WORKSPACE}/zram" ]; then
-              echo "✅ 源目录 zram 存在"
-              
-              # 检查并复制 lz4 目录
-              if [ -d "${GITHUB_WORKSPACE}/zram/lz4" ]; then
-                  echo "✅ 源目录 zram/lz4 存在，开始复制..."
-                  mkdir -p ./lib/lz4
-                  cp -r "${GITHUB_WORKSPACE}"/zram/lz4/* ./lib/lz4/
-                  
-                  # 验证复制结果
-                  if [ -n "$(ls -A ./lib/lz4)" ]; then
-                      echo "✅ lz4 文件复制成功，文件数量: $(ls ./lib/lz4 | wc -l)"
-                  else
-                      echo "❌ 错误: lz4 文件复制失败，目标目录为空"
-                      exit 1
-                  fi
-              else
-                  echo "❌ 错误: 源目录 zram/lz4 不存在"
-                  exit 1
-              fi
-              
-              # 检查并复制 linux 头文件目录
-              if [ -d "${GITHUB_WORKSPACE}/zram/include/linux" ]; then
-                  echo "✅ 源目录 zram/include/linux 存在，开始复制..."
-                  mkdir -p ./include/linux
-                  cp -r "${GITHUB_WORKSPACE}"/zram/include/linux/* ./include/linux/
-                  
-                  # 验证复制结果
-                  if [ -n "$(ls -A ./include/linux)" ]; then
-                      echo "✅ linux 头文件复制成功，文件数量: $(ls ./include/linux | wc -l)"
-                  else
-                      echo "❌ 错误: linux 头文件复制失败，目标目录为空"
-                      exit 1
-                  fi
-              else
-                  echo "❌ 错误: 源目录 zram/include/linux 不存在"
-                  exit 1
-              fi
-              
-              # 检查并复制补丁文件
-              if [ -f "${GITHUB_WORKSPACE}/zram/6.6/lz4_1.10.0.patch" ]; then
-                  echo "✅ 补丁文件 lz4_1.10.0.patch 存在，开始复制..."
-                  cp -r "${GITHUB_WORKSPACE}"/zram/6.6/lz4_1.10.0.patch ./
-                  
-                  # 验证复制结果
-                  if [ -f "./lz4_1.10.0.patch" ]; then
-                      echo "✅ 补丁文件复制成功"
-                      echo "文件大小: $(du -h ./lz4_1.10.0.patch | cut -f1)"
-                  else
-                      echo "❌ 错误: 补丁文件复制失败"
-                      exit 1
-                  fi
-              else
-                  echo "❌ 错误: 补丁文件 lz4_1.10.0.patch 不存在"
-                  exit 1
-              fi
-          else
-              echo "❌ 错误: 源目录 zram 不存在"
-              echo "请检查路径: ${GITHUB_WORKSPACE}/zram"
-              exit 1
-          fi
+          echo '$CCACHE_DIR'
