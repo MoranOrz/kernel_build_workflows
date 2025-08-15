@@ -125,7 +125,7 @@ jobs:
           mkdir -p kernel_workspace/kernel_platform
           cd kernel_workspace/kernel_platform
 
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/susfs-main/kernel/setup.sh" -o setup.sh && bash setup.sh susfs-main
 
           cd KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10700)
@@ -160,6 +160,10 @@ jobs:
           for file in "${files[@]}"; do
               if [ -e "$file" ]; then
                   rm "$file"
+                  if [ -e "$file" ]; then
+                      echo "::error ::Failed to remove $file"
+                      exit 1
+                  fi
               fi
           done
 
@@ -282,43 +286,23 @@ jobs:
 
       - name: 🔨 Build Kernel (构建内核)
         run: |
+          export KBUILD_BUILD_TIMESTAMP="Tue Mar 4 09:04:13 UTC 2025"
+
+          export PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin:$PATH"
           export PATH="/usr/lib/ccache:$PATH"
-          CLANG_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin"
-          RUSTC_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/rust/linux-x86/1.73.0b/bin/rustc"
-          PAHOLE_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/pahole"
-
-          if [ ! -d "$CLANG_PATH" ]; then
-            echo "::error ::Clang toolchain not found at $CLANG_PATH"
-            exit 1
-          fi
-          if [ ! -f "$RUSTC_PATH" ]; then
-            echo "::error ::Rust compiler not found at $RUSTC_PATH"
-            exit 1
-          fi
-          if [ ! -f "$PAHOLE_PATH" ]; then
-            echo "::error ::Pahole not found at $PAHOLE_PATH"
-            exit 1
-          fi
-
-          export PATH="$CLANG_PATH:$PATH"
-
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="8G"
 
-          export KBUILD_BUILD_TIMESTAMP="Tue Mar 4 09:04:13 UTC 2025"
-
-          sudo apt install -y libelf-dev
-
           cd kernel_workspace/kernel_platform/common
-          mkdir -p out
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC="$RUSTC_PATH" PAHOLE="$PAHOLE_PATH" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  gki_defconfig
+          
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  gki_defconfig
 
           if [ ! -f out/.config ]; then echo "::error ::.config not generated"; exit 1; fi
 
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC="$RUSTC_PATH" PAHOLE="$PAHOLE_PATH" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
 
       - name: 📦 应用 KPM
         if: ${{ github.event.inputs.enable_feature_kpm }}
