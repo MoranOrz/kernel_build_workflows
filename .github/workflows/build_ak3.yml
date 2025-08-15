@@ -228,6 +228,7 @@ jobs:
 
       - name: 🛠️ 设置内核名称 (Set Kernel Name)
         run: |
+          cd kernel_workspace/kernel_platform
           DEFAULT_SUFFIX="-android15-8-g302cb15749a8-ab13157299-4k"
           echo "当前机型: ${{ env.DEVICE_NAME }}"
           echo "默认后缀: $DEFAULT_SUFFIX"
