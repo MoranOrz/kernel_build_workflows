@@ -32,6 +32,8 @@ jobs:
           echo "KERNEL_TIME=Tue Mar 4 09:04:13 UTC 2025" >> $GITHUB_ENV
           echo "DEFAULT_SUFFIX=-android15-8-g302cb15749a8-ab13157299-4k" >> $GITHUB_ENV
           echo "CCACHE_DIR=$HOME/.ccache_$DEVICE_NAME" >> $GITHUB_ENV
+      - name: Display Environment Variables
+        run: |
           echo "验证："
           echo "DEVICE_NAME: $DEVICE_NAME"
           echo "KERNEL_TIME: $KERNEL_TIME"
