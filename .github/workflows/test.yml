@@ -15,18 +15,9 @@ on:
 jobs:
   builds:
     runs-on: ubuntu-latest
-    env:
-      ENABLE_FEATURE_KPM: ${{ github.event.inputs.enable_feature_kpm }}
-      ENABLE_FEATURE_BBR: ${{ github.event.inputs.enable_feature_bbr }}
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_HARDLINK: "true"
-      CCACHE_DIR: "$HOME/.ccache_oneplus_pad_2_pro"
-      CCACHE_MAXSIZE: 8G
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: 测试
         run: |
-          echo '${{env.CCACHE_DIR}}'
