@@ -1,26 +1,45 @@
-name: 平板2Pro
+name: Build_oneplus_sm8750
 on:
   workflow_dispatch:
     inputs:
-      enable_feature_kpm:
-        description: "KPM"
+      REPO_MANIFEST:
+        required: true
+        type: choice
+        options:
+          - "oneplus_pad_2_pro"
+        default: "oneplus_pad_2_pro"
+
+      keep_original_settings:
+        description: "保持原内核名称及构建时间"
         required: false
         default: true
         type: boolean
-      enable_feature_bbr:
-        description: "BBR"
+
+      custom_kernel_suffix:
+        description: "✏️ 自定义内核名称 - 仅在取消勾选'保持原设置'时有效"
+        required: false
+        default: ""
+
+      custom_kernel_time:
+        description: "⏰ 自定义构建时间 - 仅在取消勾选'保持原设置'时有效"
+        required: false
+        default: ""
+
+      enable_feature_z:
+        description: "添加风驰驱动"
         required: false
         default: true
         type: boolean
-      enable_feature_sched_ext:
-        description: "风驰"
+
+      enable_feature_b:
+        description: "添加BBR控制算法"
         required: false
         default: false
         type: boolean
 
 jobs:
   build:
-    name: Build_oneplus_pad_2_pro
+    name: Build_${{ github.event.inputs.REPO_MANIFEST }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,21 +47,58 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: 📊 检查磁盘空间
+      - name: 📊 Check disk space (检查磁盘空间)
         run: |
           echo "构建前磁盘空间："
           df -h
 
-      - name: ⚙️ 设置 cache 路径
+      - name: ⚙️ Set REPO_MANIFEST (设置对应机型配置文件)
+        id: set_manifest
         run: |
-          echo "CCACHE_DIR=$HOME/.ccache_oneplus_pad_2_pro" >> $GITHUB_ENV
-
-      - name: 📦 设置下载账户
+          case "${{ github.event.inputs.REPO_MANIFEST }}" in
+            oneplus_ace5_pro)
+              echo "REPO_MANIFEST=JiuGeFaCai_oneplus_ace5_pro_v" >> $GITHUB_ENV
+              echo "DEVICES_NAME=oneplus_ace5_pro" >> $GITHUB_ENV
+              ;;
+            oneplus_13)
+              echo "REPO_MANIFEST=JiuGeFaCai_oneplus_13_v" >> $GITHUB_ENV
+              echo "DEVICES_NAME=oneplus_13" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "REPO_MANIFEST=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
+              echo "DEVICES_NAME=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
+              ;;
+          esac
+      - name: ⚙️ Set KERNEL_TIME (设置构建时间)
+        id: set_kernel_time
         run: |
-          git config --global user.name "MoranOrz"
-          git config --global user.email "authorz@aliyun.com"
-
-      - name: 🛠 配置 APT 缓存
+          if [ "${{ github.event.inputs.keep_original_settings }}" = "false" ] && [ -n "${{ github.event.inputs.custom_kernel_time }}" ]; then
+            echo "使用自定义构建时间: ${{ github.event.inputs.custom_kernel_time }}"
+            echo "KERNEL_TIME=${{ github.event.inputs.custom_kernel_time }}" >> $GITHUB_ENV
+          else
+            case "${{ env.DEVICES_NAME }}" in
+              oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
+                echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
+                ;;
+              oneplus_13t)
+                echo 'KERNEL_TIME=Tue Jun 10 12:12:23 UTC 2025' >> $GITHUB_ENV
+                ;;
+              oneplus_pad_2_pro)
+                echo 'KERNEL_TIME=Tue Mar 4 09:04:13 UTC 2025' >> $GITHUB_ENV
+                ;;
+              oneplus_ace5_ultra)
+                echo 'KERNEL_TIME=Fri Apr 18 19:35:07 UTC 2025' >> $GITHUB_ENV
+                ;;
+            esac
+          fi
+      - name: ⚙️ Set device-specific CCACHE_DIR (设置对应机型Cceche路径)
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache_${{ env.REPO_MANIFEST }}" >> $GITHUB_ENV
+      - name: 📦 Configure Git (设置下载账户)
+        run: |
+          git config --global user.name "AnkoleNeon"
+          git config --global user.email "ankole@foxmail.com"
+      - name: 🛠 Configure APT caching (配置APT缓存)
         run: |
           APT_CACHE_DIR="$HOME/apt-cache"
           mkdir -p "$APT_CACHE_DIR"/{archives,lists/partial}
@@ -52,16 +108,14 @@ jobs:
           echo "Acquire::Check-Valid-Until \"false\";" | sudo tee -a /etc/apt/apt.conf.d/90user-cache
           echo "Acquire::Languages \"none\";" | sudo tee -a /etc/apt/apt.conf.d/90user-cache
           sudo chown -R $USER:$USER "$APT_CACHE_DIR"
-
-      - name: 🛠 缓存 APT 包
+      - name: 🛠 Cache APT packages (缓存APT包)
         uses: actions/cache@v3
         with:
           path: ${{ env.HOME }}/apt-cache
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/build_ak3.yml') }}
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/Build_oneplus_sm8750.yml') }}
           restore-keys: |
             ${{ runner.os }}-apt-
-
-      - name: 📦 安装依赖
+      - name: 📦 Install dependencies (安装依赖)
         run: |
           sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock
           APT_CACHE_DIR="$HOME/apt-cache"
@@ -75,23 +129,21 @@ jobs:
 
           echo "✅ 依赖安装完成"
 
-      - name: 📥 载入 ccache 缓存
+      - name: 📥 Restore ccache (载入 机型：${{ env.DEVICES_NAME }}的 ccache 缓存)
         uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ github.ref }}-oneplus_pad_2_pro
+          key: ccache-${{ runner.os }}-${{ github.ref }}-${{ env.REPO_MANIFEST }}
           restore-keys: |
-            ccache-${{ runner.os }}-oneplus_pad_2_pro-
+            ccache-${{ runner.os }}-${{ env.REPO_MANIFEST }}-
             ccache-${{ runner.os }}-
-
-      - name: 📥 初始化 ccache
+      - name: 📥 Init ccache (如果是第一次运行则初始化Cceche)
         run: |
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="8G"
-
           INIT_FLAG="$CCACHE_DIR/.ccache_initialized"
           if command -v ccache >/dev/null 2>&1; then
             if [ ! -f "$INIT_FLAG" ]; then
@@ -105,22 +157,20 @@ jobs:
           else
             echo "未安装 ccache，跳过"
           fi
-
-      - name: 📥 下载 repo
+      - name: 📥 Install repo tool (下载repo工具)
         run: |
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
           chmod a+x ~/repo
           sudo mv ~/repo /usr/local/bin/repo
-
-      - name: 📥 初始化 repo 并同步内核源码
+      - name: 📥 Initialize repo and sync (初始化repo并同步内核源码)
         run: |
           mkdir kernel_workspace && cd kernel_workspace
-          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m oneplus_pad_2_pro.xml --depth=1
+          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m ${{ env.REPO_MANIFEST }}.xml --depth=1
           repo --trace sync -c -j$(nproc --all) --no-tags
           rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
           rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
 
-      - name: ⚙️ 设置 SuKiSU Ultra
+      - name: ⚙️ Set SuKiSU Ultra (设置SuKiSU Ultra)
         run: |
           mkdir -p kernel_workspace/kernel_platform
           cd kernel_workspace/kernel_platform
@@ -133,11 +183,12 @@ jobs:
           export KSU_VERSION=$KSU_VERSION
           sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
 
-      - name: 🔧 配置 susfs
+      - name: 🔧 Set up SUSFS (配置 SUSFS)
         run: |
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
           git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+          git clone https://github.com/AnkoleNeon/build_oneplus_test.git lz4_patch
 
           cd kernel_platform
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
@@ -150,46 +201,48 @@ jobs:
 
           # Apply patches
           cd ./common
-
-          files=(
-              "lib/lz4/lz4_compress.c"
-              "lib/lz4/lz4_decompress.c"
-              "lib/lz4/lz4defs.h"
-              "lib/lz4/lz4hc_compress.c"
-          )
-          for file in "${files[@]}"; do
-              if [ -e "$file" ]; then
-                  rm "$file"
+          if [ "${{ env.DEVICES_NAME }}" != "oneplus_ace5_ultra" ]; then
+              files=(
+                  "lib/lz4/lz4_compress.c"
+                  "lib/lz4/lz4_decompress.c"
+                  "lib/lz4/lz4defs.h"
+                  "lib/lz4/lz4hc_compress.c"
+              )
+              for file in "${files[@]}"; do
                   if [ -e "$file" ]; then
-                      echo "::error ::Failed to remove $file"
-                      exit 1
+                      rm "$file"
                   fi
-              fi
-          done
+              done
 
-          cp -r "${GITHUB_WORKSPACE}"/zram/lz4/* ./lib/lz4/
-          cp -r "${GITHUB_WORKSPACE}"/zram/include/linux/* ./include/linux/
-          cp "${GITHUB_WORKSPACE}"/zram/6.6/lz4_1.10.0.patch ./
+          cp -r ../../lz4_patch/zram/lz4/* ./lib/lz4/
+          cp -r ../../lz4_patch/zram/include/linux/* ./include/linux/
+          cp -r ../../lz4_patch/zram/6.6/lz4_1.10.0.patch ./
 
           if ! patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch; then
             echo "::error ::Failed to apply lz4_1.10.0.patch"
             exit 1
           fi
 
+          if [ "${{ env.REPO_MANIFEST }}" != "oneplus_13t" ] && [ "${{ env.REPO_MANIFEST }}" != "oneplus_ace5_ultra" ] && [ "${{ env.REPO_MANIFEST }}" != "oneplus_pad_2_pro" ]; then
+          echo "修复内核版本6.6部分机型缺失Trusty OS导致的susfs的报错"
+          sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-android15-6.6.patch
+          sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-android15-6.6.patch
+          fi
+          fi  
+
           if ! patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch; then
             echo "::error ::Failed to apply 50_add_susfs_in_gki-android15-6.6.patch"
             exit 1
           fi
-
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           if ! patch -p1 -F 3 < syscall_hooks.patch; then
             echo "::error ::Failed to apply syscall_hooks.patch"
             exit 1
           fi
 
-          echo "完成 patchs"
+          echo "完成"
 
-      - name: 🔧 缓存 HMBird 补丁
+      - name: 🔧 Cache HMBird patch (缓存HMBird补丁)
         uses: actions/cache@v3
         with:
           path: ${{ runner.temp }}/hmbird_patch.c
@@ -197,12 +250,12 @@ jobs:
           restore-keys: |
             hmbird-patch-v1
 
-      - name: 🔧 应用 HMBird GKI 补丁
+      - name: 🔧 Apply HMBird GKI patch (写入单Boot开机补丁)
         run: |
           PATCH_FILE="${{ runner.temp }}/hmbird_patch.c"
           if [ ! -f "$PATCH_FILE" ]; then
             if [ -f "${GITHUB_WORKSPACE}/hmbird_patch.c" ]; then
-              echo "加载 HMBird 补丁..."
+              echo "下载HMBird补丁..."
               cp "${GITHUB_WORKSPACE}/hmbird_patch.c" "$PATCH_FILE"
             else
               echo "::error ::hmbird_patch.c not found in ${GITHUB_WORKSPACE}"
@@ -216,11 +269,11 @@ jobs:
           if ! grep -q "hmbird_patch.o" Makefile; then
             echo "obj-y += hmbird_patch.o" >> Makefile
           fi
-          echo "HMBird 补丁应用完成"
+          echo "HMBird补丁应用完成"
 
-      - name: 🔧 设置编译配置
+      - name: 🔧 Set gki_defconfig (设置编译配置)
         env:
-          ENABLE_BBR: ${{ github.event.inputs.enable_feature_bbr }}
+          ENABLE_B: ${{ github.event.inputs.enable_feature_b }}
         run: |
           cd kernel_workspace/kernel_platform
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -254,7 +307,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           # Add BBR
-          if [ "$ENABLE_BBR" = "true" ]; then
+          if [ "$ENABLE_B" = "true" ]; then
             echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -268,44 +321,93 @@ jobs:
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           git add -A && git commit -a -m "BUILD Kernel"
-
-      - name: 🔧 设置内核名称
+      - name: 🔧 Set Kernel name (设置内核名称)
+        env:
+          REPO_MANIFEST: ${{ github.event.inputs.REPO_MANIFEST }}
+          KEEP_ORIGINAL: ${{ github.event.inputs.keep_original_settings }}
+          CUSTOM_SUFFIX: ${{ github.event.inputs.custom_kernel_suffix }}
         run: |
-          cd kernel_workspace/kernel_platform        
-          sudo sed -i "s/-4k/-android15-8-g302cb15749a8-ab13157299-4k/g" ./common/arch/arm64/configs/gki_defconfig
+          cd kernel_workspace/kernel_platform
+          case "${{ env.DEVICES_NAME }}" in
+            oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
+              DEFAULT_SUFFIX="-android15-8-g013ec21bba94-abogki383916444-4k"
+              ;;
+            oneplus_13t)
+              DEFAULT_SUFFIX="-android15-8-gd43086512890-abogki423825152-4k"
+              ;;
+            oneplus_pad_2_pro)
+              DEFAULT_SUFFIX="-android15-8-g302cb15749a8-ab13157299-4k"
+              ;;
+            oneplus_ace5_ultra)
+              DEFAULT_SUFFIX="-android15-8-gfc70d29746a7-abogki412262948-4k"
+              ;;
+          esac
+
+          echo "当前机型: ${{ env.DEVICES_NAME }}"
+          echo "保持原设置: $KEEP_ORIGINAL"
+          echo "自定义后缀: $CUSTOM_SUFFIX"
+          echo "默认后缀: $DEFAULT_SUFFIX"
+
+          if [ "$KEEP_ORIGINAL" = "false" ]; then
+            if [ -n "$CUSTOM_SUFFIX" ]; then
+              DEFAULT_SUFFIX="$CUSTOM_SUFFIX"
+              echo "使用自定义内核名称: $DEFAULT_SUFFIX"
+            else
+              echo "使用机型默认内核名称: $DEFAULT_SUFFIX"
+            fi
+          else
+            echo "保持原内核名称设置"
+          fi
+          ESCAPED_SUFFIX=$(printf '%s\n' "$DEFAULT_SUFFIX" | sed 's:[\/&]:\\&:g')
+          sudo sed -i "s/-4k/$ESCAPED_SUFFIX/g" ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/${scm_version}//' ./common/scripts/setlocalversion
 
       - name: 🔧 Add sched_ext (写入风驰补丁)
-        if: ${{ github.event.inputs.enable_feature_sched_ext }}
+        if: ${{ github.event.inputs.enable_feature_z }}
         run: |
           cd kernel_workspace/kernel_platform/
           git clone https://github.com/HanKuCha/sched_ext.git
           cp -r ./sched_ext/* ./common/kernel/sched
           rm -rf ./sched_ext/.git
           cd common/kernel/sched
-
       - name: 🔨 Build Kernel (构建内核)
         run: |
-          export KBUILD_BUILD_TIMESTAMP="Tue Mar 4 09:04:13 UTC 2025"
-
-          export PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin:$PATH"
           export PATH="/usr/lib/ccache:$PATH"
+          CLANG_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin"
+          RUSTC_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/rust/linux-x86/1.73.0b/bin/rustc"
+          PAHOLE_PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/pahole"
+          if [ ! -d "$CLANG_PATH" ]; then
+            echo "::error ::Clang toolchain not found at $CLANG_PATH"
+            exit 1
+          fi
+          if [ ! -f "$RUSTC_PATH" ]; then
+            echo "::error ::Rust compiler not found at $RUSTC_PATH"
+            exit 1
+          fi
+          if [ ! -f "$PAHOLE_PATH" ]; then
+            echo "::error ::Pahole not found at $PAHOLE_PATH"
+            exit 1
+          fi
+          export PATH="$CLANG_PATH:$PATH"
+
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="8G"
 
+          export KBUILD_BUILD_TIMESTAMP="${{ env.KERNEL_TIME }}"
+
+          sudo apt install -y libelf-dev
+
           cd kernel_workspace/kernel_platform/common
-          
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  gki_defconfig
+          mkdir -p out
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC="$RUSTC_PATH" PAHOLE="$PAHOLE_PATH" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  gki_defconfig
 
           if [ ! -f out/.config ]; then echo "::error ::.config not generated"; exit 1; fi
 
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
-
-      - name: 📦 应用 KPM
-        if: ${{ github.event.inputs.enable_feature_kpm }}
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC="$RUSTC_PATH" PAHOLE="$PAHOLE_PATH" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
+      - name: 📦 Apply KPM Patch (应用KPM修补补丁)
         run: |
           cd kernel_workspace/kernel_platform/common/out/arch/arm64/boot
           curl -LO https://github.com/SukiSU-Ultra/SukiSU_patch/raw/refs/heads/main/kpm/patch_linux
@@ -314,7 +416,7 @@ jobs:
           rm -f Image
           mv oImage Image
 
-      - name: 📦 构建 AnyKernel3 压缩包
+      - name: 📦 Make AnyKernel3
         run: |
           git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
           if [ ! -d "./AnyKernel3" ]; then
@@ -324,9 +426,30 @@ jobs:
           rm -rf ./AnyKernel3/.git
           rm -rf ./AnyKernel3/push.sh
           cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
-
-      - name: 📤 上传 AnyKernel3 压缩包
+      - name: 📤 Upload AnyKernel3 (上传 KPM_AK3包)
         uses: actions/upload-artifact@v4
         with:
-          name: AK3_${{ github.event.inputs.enable_feature_kpm == 'true' && '_KPM' || '_NoKPM' }}_${{ env.KSUVER }}_oneplus_pad_2_pro_SuKiSU
+          name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
           path: ./AnyKernel3/*
+
+      - name: 📢 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.KSUVER }}
+          name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
+          body: |
+            [AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU]
+            LZ4 1.10.0
+            KPM
+            SUSFS 1.5.9
+            风驰内核补丁
+          files: ./downloaded_artifact/AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Post-build disk check (构建后空间检查)
+        run: |
+          echo "构建后磁盘空间："
+          df -h
