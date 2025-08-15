@@ -29,7 +29,4 @@ jobs:
           fetch-depth: 0
       - name: 测试
         run: |
-          echo '${CCACHE_DIR}'
-          echo '============='
-          echo '${HOME}'
-          echo '============='
+          echo '${{env.CCACHE_DIR}}'
