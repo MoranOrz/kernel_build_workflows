@@ -1,6 +1,6 @@
 [![Github](https://img.shields.io/badge/-Moran-181717?style=flat&logo=github&logoColor=white)](https://github.com/MoranOrz)
-[![开源地址](https://img.shields.io/badge/开源-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/android_kernel_common_oneplus_sm8750/tree/oneplus/sm8750_v_15.0.1_pad_2_pro)
-[![manifest](https://img.shields.io/badge/开源-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/kernel_manifest/tree/oneplus/sm8750)
+[![开源地址](https://img.shields.io/badge/开源地址-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/android_kernel_common_oneplus_sm8750/tree/oneplus/sm8750_v_15.0.1_pad_2_pro)
+[![manifest](https://img.shields.io/badge/manifest-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/kernel_manifest/tree/oneplus/sm8750)
 <br>
 本项目借鉴：
 <br>
