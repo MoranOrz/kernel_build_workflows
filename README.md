@@ -1,0 +1,11 @@
+[![Github](https://img.shields.io/badge/-Moran-181717?style=flat&logo=github&logoColor=white)](https://github.com/MoranOrz)
+[![开源地址](https://img.shields.io/badge/开源-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/android_kernel_common_oneplus_sm8750/tree/oneplus/sm8750_v_15.0.1_pad_2_pro)
+[![manifest](https://img.shields.io/badge/开源-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/OnePlusOSS/kernel_manifest/tree/oneplus/sm8750)
+<br>
+本项目借鉴：
+<br>
+[![GitHub](https://img.shields.io/badge/-HanKuCha-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/HanKuCha/oneplus13_a5p_sukisu)
+[![GitHub](https://img.shields.io/badge/-showdo-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/showdo/build_oneplus_sm8750)
+[![GitHub](https://img.shields.io/badge/-AnkoleNeon-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/AnkoleNeon/build_oneplus_test)
+[![GitHub](https://img.shields.io/badge/-cctv18-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/cctv18/oppo_oplus_realme_sm8650)
+[![GitHub](https://img.shields.io/badge/-Numbersf-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/Numbersf/Action-Build)
