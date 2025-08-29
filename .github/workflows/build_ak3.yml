@@ -33,7 +33,7 @@ jobs:
           echo "ENABLE_KPM=${{ github.event.inputs.enable_feature_kpm }}" >> $GITHUB_ENV
           echo "ENABLE_BBR=${{ github.event.inputs.enable_feature_bbr }}" >> $GITHUB_ENV
           echo "DEVICE_NAME=oneplus_pad_2_pro" >> $GITHUB_ENV
-          echo "KERNEL_TIME=Tue Mar 4 09:04:13 UTC 2025" >> $GITHUB_ENV
+          echo "KERNEL_TIME=Tue Jun 3 03:22:33 UTC 2025" >> $GITHUB_ENV
           echo "DEFAULT_SUFFIX=-android15-8-g7b1f455c7143-ab13591283-4k" >> $GITHUB_ENV
 
       - name: ⚙️ 设置缓存路径 (Set Cache Path)
