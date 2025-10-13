@@ -104,11 +104,6 @@ jobs:
           fi
           ccache -s
 
-      - name: 🤖 显示缓存状态 (Display Cache Status)
-        run: |
-          echo "APT缓存命中: ${{ steps.apt-cache.outputs.cache-hit }}"
-          echo "ccache缓存命中: ${{ steps.ccache-cache.outputs.cache-hit }}"
-
       - name: 📥 安装 repo 工具 (Install Repo Tool)
         run: |
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
