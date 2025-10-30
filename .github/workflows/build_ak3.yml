@@ -165,13 +165,13 @@ jobs:
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
           if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-            cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.5.patch ./common/
+            cp ../SukiSU_patch/hooks/scope_min_manual_hooks_v1.5.patch ./common/
           fi
           if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
-            cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
+            cp ../SukiSU_patch/hooks/syscall_hooks.patch ./common/
           fi
 
-          cp ./SukiSU_patch/69_hide_stuff.patch ./common/
+          cp ../SukiSU_patch/69_hide_stuff.patch ./common/
 
           # Apply patches
           cd ./common
