@@ -8,5 +8,5 @@
 [![GitHub](https://img.shields.io/badge/-HanKuCha-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/HanKuCha/oneplus13_a5p_sukisu)
 [![GitHub](https://img.shields.io/badge/-showdo-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/showdo/build_oneplus_sm8750)
 [![GitHub](https://img.shields.io/badge/-AnkoleNeon-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/AnkoleNeon/build_oneplus_test)
-[![GitHub](https://img.shields.io/badge/-cctv18-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/cctv18/oppo_oplus_realme_sm8650)
+[![GitHub](https://img.shields.io/badge/-cctv18-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/cctv18/oppo_oplus_realme_sm8750)
 [![GitHub](https://img.shields.io/badge/-Numbersf-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/Numbersf/Action-Build)
