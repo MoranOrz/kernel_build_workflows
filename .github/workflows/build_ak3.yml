@@ -135,27 +135,6 @@ jobs:
             echo "ccache缓存命中详情:"
             ccache -sv
           fi
-
-      - name: ⚙️ 添加 lz4 1.10.0 & zstd 1.5.7 补丁
-        run: |
-          echo "正在添加 lz4 1.10.0 & zstd 1.5.7 补丁…"
-          cd kernel_workspace
-          git clone https://github.com/cctv18/oppo_oplus_realme_sm8750.git
-          cp ./oppo_oplus_realme_sm8750/zram_patch/001-lz4.patch ./common
-          cp ./oppo_oplus_realme_sm8750/zram_patch/lz4armv8.S ./common/lib
-          cp ./oppo_oplus_realme_sm8750/zram_patch/002-zstd.patch ./common/
-          cd ./common
-          git apply -p1 < 001-lz4.patch || true
-          patch -p1 < 002-zstd.patch || true
-
-      - name: ⚙️ 开启 BBG 基带守护
-        if: ${{ env.ENABLE_FEATURE_BBG == 'true' }}
-        run: |
-          cd kernel_workspace/common
-          echo "正在启用BBG基带守护…"
-          curl -LSs https://raw.githubusercontent.com/vc-teahouse/Baseband-guard/main/setup.sh | bash
-          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./security/Kconfig
-
       
       - name: ⚙️ 集成 SukiSU Ultra (Integrate SukiSU Ultra)
         run: |
@@ -187,7 +166,7 @@ jobs:
           # 创建版本定义模板&版本格式函数: 使用获取的提交哈希和固定后缀
           # KSU_VERSION_API: API 版本定义
           # KSU_VERSION_FULL: 完整版本定义
-          VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'-TG@Moran\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'-TG@Moran'
+          VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@Moran\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@Moran'
           # 清理内核 Kbuild 中的旧版本定义
           # 删除版本函数
           sed -i '/define get_ksu_version_full/,/endef/d' kernel/Kbuild
@@ -214,7 +193,7 @@ jobs:
           # 验证修改结果
           grep -A10 "REPO_OWNER" kernel/Kbuild  # 检查插入点后的内容
           grep "KSU_VERSION_FULL" kernel/Kbuild # 确认版本定义存在
-          echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}-TG@Moran"
+          echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@Moran"
 
       - name: ⚙️ 集成 SUSFS (Integrate SUSFS)
         run: |
@@ -236,76 +215,99 @@ jobs:
             echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
           fi
 
+      - name: ⚙️ 添加 lz4 1.10.0 & zstd 1.5.7 补丁
+        run: |
+          echo "正在添加 lz4 1.10.0 & zstd 1.5.7 补丁…"
+          cd kernel_workspace
+          git clone https://github.com/cctv18/oppo_oplus_realme_sm8750.git
+          cp ./oppo_oplus_realme_sm8750/zram_patch/001-lz4.patch ./common
+          cp ./oppo_oplus_realme_sm8750/zram_patch/lz4armv8.S ./common/lib
+          cp ./oppo_oplus_realme_sm8750/zram_patch/002-zstd.patch ./common/
+          cd ./common
+          git apply -p1 < 001-lz4.patch || true
+          patch -p1 < 002-zstd.patch || true
+
+      - name: ⚙️ 开启 BBG 基带守护
+        if: ${{ env.ENABLE_FEATURE_BBG == 'true' }}
+        run: |
+          cd kernel_workspace/common
+          echo "正在启用BBG基带守护…"
+          echo "CONFIG_BBG=y" >> ./arch/arm64/configs/gki_defconfig
+          curl -LSs https://raw.githubusercontent.com/vc-teahouse/Baseband-guard/main/setup.sh | bash
+          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./security/Kconfig
+
       - name: ⚙️ 设置编译环境
         run: |
           cd kernel_workspace
           CONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
           # 📌SukiSU Ultra
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU=y" >> CONFIG_FILE
           # 📌KPM
-          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KPM=y" >> CONFIG_FILE
           # 📌ZRAM
-          echo "CONFIG_CRYPTO_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ZRAM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SWAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_LZ4=y" >> CONFIG_FILE
+          echo "CONFIG_CRYPTO_LZ4HC=y" >> CONFIG_FILE
+          echo "CONFIG_CRYPTO_LZ4KD=y" >> CONFIG_FILE
+          echo "CONFIG_CRYPTO_ZSTD=y" >> CONFIG_FILE
+          echo "CONFIG_F2FS_FS_COMPRESSION=y" >> CONFIG_FILE
+          echo "CONFIG_F2FS_FS_LZ4=y" >> CONFIG_FILE
+          echo "CONFIG_F2FS_FS_LZ4HC=y" >> CONFIG_FILE
+          echo "CONFIG_F2FS_FS_ZSTD=y" >> CONFIG_FILE
+          echo "CONFIG_ZSMALLOC=y" >> CONFIG_FILE
+          echo "CONFIG_ZRAM=y" >> CONFIG_FILE
+          echo "CONFIG_ZRAM_WRITEBACK=y" >> CONFIG_FILE
+          echo "CONFIG_SWAP=y" >> CONFIG_FILE
           # 📌网络调度器
           if [ "${{ env.ENABLE_FEATURE_NETWORK }}" = "BBR" ]; then
-            echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_CUBIC=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_TCP_CONG_ADVANCED=y" >> CONFIG_FILE
+            echo "CONFIG_TCP_CONG_BBR=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_FQ=y" >> CONFIG_FILE
+            echo "CONFIG_TCP_CONG_BIC=n" >> CONFIG_FILE
+            echo "CONFIG_TCP_CONG_CUBIC=n" >> CONFIG_FILE
+            echo "CONFIG_TCP_CONG_WESTWOOD=n" >> CONFIG_FILE
+            echo "CONFIG_TCP_CONG_HTCP=n" >> CONFIG_FILE
+            echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> CONFIG_FILE
           fi
           if [ "${{ env.ENABLE_FEATURE_NETWORK }}" = "FQ_CODEL" ]; then
-            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_SFQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_HTB=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_TBF=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_SFB=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_RED=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NET_SCH_INGRESS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo 'CONFIG_DEFAULT_NET_SCH="fq_codel"' >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_FQ=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_SFQ=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_HTB=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_TBF=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_SFB=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_RED=y" >> CONFIG_FILE
+            echo "CONFIG_NET_SCH_INGRESS=y" >> CONFIG_FILE
+            echo "CONFIG_DEFAULT_FQ_CODEL=y" >> CONFIG_FILE
+            echo 'CONFIG_DEFAULT_NET_SCH="fq_codel"' >> CONFIG_FILE
           fi
           # 📌SUSFS
-          echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> CONFIG_FILE
+          echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> CONFIG_FILE
           # 📌杂项
-          echo "CONFIG_IP_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TCP_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IPV6_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_HEADERS_INSTALL=n" >> ./common/arch/arm64/configs/gki_defconfig
-          # 📌移除 check_defconfig
+          echo "CONFIG_IP_ECN=y" >> CONFIG_FILE
+          echo "CONFIG_TCP_ECN=y" >> CONFIG_FILE
+          echo "CONFIG_IPV6_ECN=y" >> CONFIG_FILE
+          echo "CONFIG_IP_NF_TARGET_ECN=y" >> CONFIG_FILE
+          echo "CONFIG_TMPFS_XATTR=y" >> CONFIG_FILE
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> CONFIG_FILE
+          echo "CONFIG_TMPFS=y" >> CONFIG_FILE
+          echo "CONFIG_HEADERS_INSTALL=n" >> CONFIG_FILE
+          # 📌开启O2编译优化配置
+          echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> CONFIG_FILE
+          # 📌禁用 defconfig 检查
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
 
       - name: ⚙️ 设置内核名称
