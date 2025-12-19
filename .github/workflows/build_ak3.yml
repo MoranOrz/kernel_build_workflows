@@ -407,7 +407,7 @@ jobs:
       - name: 📦 打包 AnyKernel3
         run: |
           cd kernel_workspace
-          git clone https://github.com/cctv18/AnyKernel3 --depth=1
+          git clone https://github.com/MoranOrz/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
           cp ../common/out/arch/arm64/boot/Image ./Image
@@ -415,10 +415,9 @@ jobs:
             echo "未找到内核镜像文件，构建可能出错"
             exit 1
           fi
-          zip -r ../AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SukiSU.zip ./*
 
       - name: 上传 AnyKernel3
         uses: actions/upload-artifact@v4
         with:
           name: AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SukiSU
-          path: ${{ github.workspace }}/kernel_workspace/AnyKernel*.zip
+          path: ${{ github.workspace }}/kernel_workspace/AnyKernel3/*
