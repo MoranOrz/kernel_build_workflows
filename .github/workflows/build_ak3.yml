@@ -228,6 +228,7 @@ jobs:
           cp ./SukiSU_patch/69_hide_stuff.patch ./common/
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
+          patch -p1 < 69_hide_stuff.patch || true
           if [ "${{ env.ENABLE_HYMO }}" = "true" ]; then
             echo "添加Hymo-高性能混合挂载元模块"
             wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs_with_susfs.patch
@@ -400,16 +401,22 @@ jobs:
           LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
           echo "ccache状态："
           ccache -s
-
+      
       - name: 📦 打包 AnyKernel3
         run: |
-          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
+          cd kernel_workspace
+          git clone https://github.com/cctv18/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
-          rm -rf ./AnyKernel3/push.sh
-          cp kernel_workspace/common/out/arch/arm64/boot/Image ./AnyKernel3/
+          cd AnyKernel3
+          cp ../common/out/arch/arm64/boot/Image ./Image
+          if [[ ! -f ./Image ]]; then
+            echo "未找到内核镜像文件，构建可能出错"
+            exit 1
+          fi
+          zip -r ../AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SukiSU.zip ./*
 
-      - name: 上传 AnyKernel3 (Upload AnyKernel3 Package)
+      - name: 上传 AnyKernel3
         uses: actions/upload-artifact@v4
         with:
-          name: AK3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SukiSU
+          name: AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SukiSU
           path: ./AnyKernel3/*
